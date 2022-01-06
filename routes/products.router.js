@@ -1,58 +1,44 @@
 const express = require('express');
+
 const ProductsService = require('../services/product.service');
+const { validatorHandler } = require('../middlewares/validator.handler');
+const { GetProductShema, UpdateProductSchema, CreateProductSchema } = require('../schemas/product.schema')
 
 const router = express.Router();
 const service = new ProductsService();
 
-router.get('/', (req, res) => {
-  const data = service.find();
+router.get('/', async (req, res) => {
+  const data = await service.find();
   res.status(200).json(data);
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', validatorHandler(GetProductShema, 'params'), (req, res) => {
   const { id } = req.params;
-  const product = service.findOne(id); 
+  const product = service.findOne(id);
   res.status(200).json(product);
- 
 });
 
-router.post('/', (req, res) => {
+router.post('/', validatorHandler(CreateProductSchema, 'body'), (req, res) => {
   const body = req.body;
-  if (!body) {
-    return res.status(404).json({
-      message: 'body undefined',
-      statusCode: 404,
-    });
-  }
-  res.status(201).json({
-    message: 'Created',
-    data: body,
-  });
+  const newProduct = service.create(body);
+  res.status(201).json(newProduct);
 });
 
-router.patch('/:id', (req, res) => {
-  const { id } = req.params;
-  const body = req.body;
-  if(id === "999"){
-    res.status(304).json({
-      message: "Error, Not Modified ",
-    })
-  }else{
-    res.json({
-      message: 'updated',
-      data: body,
-      id
-    });
+router.patch('/:id',
+  validatorHandler(GetProductShema, 'params'),
+  validatorHandler(UpdateProductSchema, 'body'),
+  (req, res) => {
+    const { id } = req.params;
+    const body = req.body;
+    const product = service.update(id, body);
+    res.status(200).json(product);
   }
-  
-});
+);
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id',validatorHandler(GetProductShema, 'params'), (req, res) => {
   const { id } = req.params;
-  res.json({
-    message: 'deleted',
-    id
-  });
+  const rta = service.delete(id);
+  res.status(200).json(rta);
 });
 
 module.exports = router;
